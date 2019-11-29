@@ -468,6 +468,7 @@ extern "C" void __device__2DMedianReal( gathersInfo *gInfo,float *h_filter){
 
     cudaEventRecord(start);
     transposeNaive<<<nblocks,nthreads>>>(d_data,d_filter,*gInfo,TILE_DIM,TILE_DIMY,nx);
+
     cudaEventRecord(stop);
 	cudaEventSynchronize(stop);
 
@@ -478,10 +479,32 @@ extern "C" void __device__2DMedianReal( gathersInfo *gInfo,float *h_filter){
 	}
 
     CHECK_CUDA_ERRORS(cudaDeviceSynchronize());		//important for printing messages inside the kernel!
+    //<<<*************Copy array back to host
+	CHECK_CUDA_ERRORS(cudaMemcpy( h_filter, d_filter, bytes, cudaMemcpyDeviceToHost ));
 
-	int nblock=1, nthread=10;
-	hello<<<nblock,nthread>>>();
-    cudaDeviceSynchronize();
+	//Print the output filter
+	fprintf(stderr,"output:\n");
+	for(int iny=0;iny<ny;iny++)
+	{
+		for(int inx=0;inx<nx;inx++){
+			ind = inx+iny*nx;
+			fprintf(stderr,"%5.0f",h_filter[ind]);
+		}
+		fprintf(stderr,"\n");
+	}
+
+	float milliseconds = 0;
+	cudaEventElapsedTime(&milliseconds, start, stop);
+	fprintf(stderr,"time elapsed: %f ms\n",milliseconds);
+
+	// Release device memory
+	CHECK_CUDA_ERRORS(cudaFree(d_data));
+	CHECK_CUDA_ERRORS(cudaFree(d_filter));
+
+
+	//int nblock=1, nthread=10;
+	//hello<<<nblock,nthread>>>();
+    //cudaDeviceSynchronize();
 
 }
 
